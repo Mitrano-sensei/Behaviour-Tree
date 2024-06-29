@@ -1,0 +1,20 @@
+{
+    "name": "com.mitrano.behaviourtree",
+    "version": "1.0.0",
+    "displayName": "Behaviour Tree",
+    "description": "A package to create and use behaviour trees. Inspired by a video from git-amend",
+    "documentationUrl": "",
+    "changelogUrl": "",
+    "licensesUrl": "",
+    "dependencies": {
+   },
+   "keywords": [
+      "Behaviour Tree",
+      "Utilities"
+    ],
+    "author": {
+      "name": "Elyas Tigre",
+      "email": "elyastigre@gmail.com",
+      "url": "https://github.com/Mitrano-sensei"
+    }
+  }
