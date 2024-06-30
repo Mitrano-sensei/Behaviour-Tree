@@ -12,29 +12,29 @@ namespace BehaviourTree
 
     public class Condition : IStrategy
     {
-        readonly Func<bool> condition;
+        readonly Func<bool> _condition;
 
         public Condition(Func<bool> condition)
         {
-            this.condition = condition;
+            this._condition = condition;
         }
 
         public Node.Status Process()
         {
-            return condition() ? Node.Status.Success : Node.Status.Failure;
+            return _condition() ? Node.Status.Success : Node.Status.Failure;
         }
     }
 
     public class ActionStrategy : IStrategy
     {
-        readonly Action action;
+        readonly Action _action;
         public ActionStrategy(Action action)
         {
-            this.action = action;
+            this._action = action;
         }
         public Node.Status Process()
         {
-            action();
+            _action();
             return Node.Status.Success;
         }
     }
