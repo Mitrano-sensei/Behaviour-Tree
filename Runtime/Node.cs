@@ -58,6 +58,31 @@ namespace BehaviourTree
         public override void Reset() => _strategy.Reset();
     }
 
+    public class OneChildNode : Node
+    {
+        public OneChildNode(string name, int priority = 0) : base(name, priority)
+        {
+        }
+
+        public override Status Process()
+        {
+            if (Children.Count == 0) throw new Exception(Name + " must have a child");
+            return Children[0].Process();
+        }
+        
+        public override void AddChild(Node child)
+        {
+            if (Children.Count > 0) throw new System.Exception(Name + " can only have one child");
+            base.AddChild(child);
+        }
+        
+        public override void Reset()
+        {
+            base.Reset();
+            Children[0].Reset();
+        }
+    }
+    
     #endregion
 
     #region Composite Nodes
@@ -116,7 +141,7 @@ namespace BehaviourTree
                     case Status.Running:
                         return Status.Running;
                     default:
-                        throw new System.Exception("Status not recognized, should never happen !");
+                        throw new Exception("Status not recognized, should never happen !");
                 }
             }
 
@@ -149,7 +174,7 @@ namespace BehaviourTree
                     case Status.Running:
                         return Status.Running;
                     default:
-                        throw new System.Exception("Status not recognized, should never happen !");
+                        throw new Exception("Status not recognized, should never happen !");
                 }
             }
 
@@ -218,7 +243,7 @@ namespace BehaviourTree
     /**
      * Will return the opposite of the child's status
      */
-    public class Inverter : Node
+    public class Inverter : OneChildNode
     {
         public Inverter(string name, int priority = 0) : base(name, priority)
         {
@@ -237,22 +262,15 @@ namespace BehaviourTree
                 case Status.Running:
                     return Status.Running;
                 default:
-                    throw new System.Exception("Status not recognized, should never happen !");
+                    throw new Exception("Status not recognized, should never happen !");
             }
-        }
-
-        public override void AddChild(Node child)
-        {
-            // TODO : Could make it work with multiple children if needed
-            if (Children.Count > 0) throw new System.Exception("Inverter can only have one child");
-            base.AddChild(child);
         }
     }
 
     /**
      * Will repeat until the child returns a failure
      */
-    public class UntilFail : Node
+    public class UntilFail : OneChildNode
     {
         public UntilFail(string name, int priority = 0) : base(name, priority)
         {
@@ -270,19 +288,12 @@ namespace BehaviourTree
 
             return Status.Running;
         }
-
-        public override void AddChild(Node child)
-        {
-            // TODO : Could make it work with multiple children if needed
-            if (Children.Count > 0) throw new System.Exception("UntilFail can only have one child");
-            base.AddChild(child);
-        }
     }
 
     /**
      * Will repeat until the child returns a success
      */
-    public class UntilSuccess : Node
+    public class UntilSuccess : OneChildNode
     {
         public UntilSuccess(string name, int priority = 0) : base(name, priority)
         {
@@ -300,19 +311,12 @@ namespace BehaviourTree
 
             return Status.Running;
         }
-
-        public override void AddChild(Node child)
-        {
-            // TODO : Could make it work with multiple children if needed
-            if (Children.Count > 0) throw new System.Exception("UntilSuccess can only have one child");
-            base.AddChild(child);
-        }
     }
 
     /**
      * Will repeat until the condition is true or the child returns failure
      */
-    public class RepeatUntil : Node
+    public class RepeatUntil : OneChildNode
     {
         readonly Func<bool> _condition;
 
@@ -346,10 +350,10 @@ namespace BehaviourTree
     /**
      * Will repeat a certain amount of times, and stop if the child returns failure
      */
-    public class Repeat : Node
+    public class Repeat : OneChildNode
     {
-        readonly int _times;
-        int _currentTimes;
+        private readonly int _times;
+        private int _currentTimes;
 
         public Repeat(int times, string name, int priority = 0) : base(name, priority)
         {
@@ -387,6 +391,78 @@ namespace BehaviourTree
         }
     }
 
+    /**
+     * Executes normally, but will return Failure instantly if the condition is met
+     */
+    public class FailIf : OneChildNode
+    {
+        private readonly Func<bool> _condition;
+
+        public FailIf(Func<bool> failIfCondition, string name, int priority = 0) : base(name, priority)
+        {
+            _condition = failIfCondition;
+        }
+        
+        public override Status Process()
+        {
+            if (Children.Count == 0) throw new Exception(Name + " must have a child");
+
+            if (_condition())
+            {
+                Reset();
+                return Status.Failure;
+            }
+
+            return base.Process();
+        }
+    }
+    
+    /**
+     * Executes normally, but return Success instantly if the condition is met
+     */
+    public class SucceedIf : Node
+    {
+        private readonly Func<bool> _condition;
+
+        public SucceedIf(Func<bool> succeedIfCondition, string name, int priority = 0) : base(name, priority)
+        {
+            _condition = succeedIfCondition;
+        }
+        
+        public override Status Process()
+        {
+            if (Children.Count == 0) throw new Exception(Name + " must have a child");
+
+            if (_condition())
+            {
+                Reset();
+                return Status.Success;
+            }
+
+            return base.Process();
+        }
+    }
+
+    /**
+     * Will take a condition, and process its first Child if the condition is true, and the second one if it is false
+     */
+    public class IfOr : Node
+    {
+        private readonly Func<bool> _condition;
+
+        public IfOr(Func<bool> condition, string name, int priority = 0) : base(name, priority)
+        {
+            _condition = condition;
+        }
+
+        public override Status Process()
+        {
+            if (Children.Count != 2) throw new Exception(Name + " must have two children");
+            
+            return _condition() ? Children[0].Process() : Children[1].Process();
+        }
+    }
+
     #endregion
     
     #region Special Leafs
@@ -396,8 +472,8 @@ namespace BehaviourTree
      */
     public class WaitLeaf : Leaf
     {
-        readonly float _duration;
-        float _startTime = -1f;
+        private readonly float _duration;
+        private float _startTime = -1f;
         
         public WaitLeaf(float durationInSeconds, string name = "Wait", int priority = 0) : base(new ActionStrategy(() => { }), name, priority)
         {
@@ -408,14 +484,15 @@ namespace BehaviourTree
         {
             if (_startTime < 0)
                 _startTime = Time.time;
-            
-            if (Time.time - _startTime >= _duration)
-            {
-                Reset();
-                return Status.Success;
-            }
 
-            return Status.Running;
+            // If the time is not elapsed, return Running
+            if (Time.time - _startTime < _duration) 
+                return Status.Running;
+            
+            // If the time is elapsed, return Success
+            Reset();
+            return Status.Success;
+
         }
 
         public override void Reset()
@@ -427,7 +504,7 @@ namespace BehaviourTree
 
     public class DebugLeaf : Leaf
     {
-        readonly string _message;
+        private readonly string _message;
         public DebugLeaf(string message, string name = "Debug", int priority = 0) : base(new ActionStrategy(() => Debug.Log(message)), name, priority)
         {
             _message = message;
