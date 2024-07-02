@@ -56,6 +56,8 @@ namespace BehaviourTree
 
         public override Status Process() => _strategy.Process();
         public override void Reset() => _strategy.Reset();
+        
+        public override void AddChild(Node child) => throw new Exception(Name + " can't have children");
     }
 
     public class OneChildNode : Node
@@ -508,6 +510,20 @@ namespace BehaviourTree
         public DebugLeaf(string message, string name = "Debug", int priority = 0) : base(new ActionStrategy(() => Debug.Log(message)), name, priority)
         {
             _message = message;
+        }
+    }
+    
+    public class ConditionLeaf : Leaf
+    {
+        private readonly Func<bool> _condition;
+        public ConditionLeaf(Func<bool> condition, string name = "Condition", int priority = 0) : base(new ActionStrategy(() => { }), name, priority)
+        {
+            _condition = condition;
+        }
+
+        public override Status Process()
+        {
+            return _condition() ? Status.Success : Status.Failure;
         }
     }
     
