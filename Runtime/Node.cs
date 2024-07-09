@@ -62,7 +62,7 @@ namespace BehaviourTree
 
     public class OneChildNode : Node
     {
-        public OneChildNode(string name, int priority = 0) : base(name, priority)
+        protected OneChildNode(string name, int priority = 0) : base(name, priority)
         {
         }
 
@@ -504,6 +504,9 @@ namespace BehaviourTree
         }
     }
 
+    /**
+     * Will print a message in the console
+     */
     public class DebugLeaf : Leaf
     {
         private readonly string _message;
@@ -513,6 +516,9 @@ namespace BehaviourTree
         }
     }
     
+    /**
+     * Will return Success if the given condition is met, and Failure otherwise
+     */
     public class ConditionLeaf : Leaf
     {
         private readonly Func<bool> _condition;

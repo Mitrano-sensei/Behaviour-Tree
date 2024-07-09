@@ -38,4 +38,11 @@ namespace BehaviourTree
             return Node.Status.Success;
         }
     }
+    
+    public class NothingStrategy : ActionStrategy
+    {
+        public NothingStrategy() : base(() => {})
+        {
+        }
+    }
 }
