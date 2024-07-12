@@ -464,6 +464,9 @@ namespace BehaviourTree
         }
     }
 
+    /**
+     * Will process child, will return Success if the child succeeded, Failure otherwise
+     */
     public class OrFail : Decorator
     {
         public OrFail(string name, int priority = 0) : base(name, priority)
@@ -521,6 +524,30 @@ namespace BehaviourTree
         {
             base.Reset();
             _startTime = -1f;
+        }
+    }
+
+    /**
+     * Will return running until the condition is met, then return Success.
+     * Equivalent to a UntilSuccess and a ConditionLeaf
+     */
+    public class WaitFor : Leaf
+    {
+        private readonly Func<bool> _condition;
+        public WaitFor(Func<bool> condition, string name = "WaitFor", int priority = 0) : base(new ActionStrategy(() => { }), name, priority)
+        {
+            _condition = condition;
+        }
+
+        public override Status Process()
+        {
+            if (_condition())
+            {
+                Reset();
+                return Status.Success;
+            }
+
+            return Status.Running;
         }
     }
 
