@@ -60,9 +60,9 @@ namespace BehaviourTree
         public override void AddChild(Node child) => throw new Exception(Name + " can't have children");
     }
 
-    public class OneChildNode : Node
+    public class Decorator : Node
     {
-        protected OneChildNode(string name, int priority = 0) : base(name, priority)
+        protected Decorator(string name, int priority = 0) : base(name, priority)
         {
         }
 
@@ -80,7 +80,6 @@ namespace BehaviourTree
         
         public override void Reset()
         {
-            base.Reset();
             Children[0].Reset();
         }
     }
@@ -245,7 +244,7 @@ namespace BehaviourTree
     /**
      * Will return the opposite of the child's status
      */
-    public class Inverter : OneChildNode
+    public class Inverter : Decorator
     {
         public Inverter(string name, int priority = 0) : base(name, priority)
         {
@@ -272,7 +271,7 @@ namespace BehaviourTree
     /**
      * Will repeat until the child returns a failure
      */
-    public class UntilFail : OneChildNode
+    public class UntilFail : Decorator
     {
         public UntilFail(string name, int priority = 0) : base(name, priority)
         {
@@ -295,7 +294,7 @@ namespace BehaviourTree
     /**
      * Will repeat until the child returns a success
      */
-    public class UntilSuccess : OneChildNode
+    public class UntilSuccess : Decorator
     {
         public UntilSuccess(string name, int priority = 0) : base(name, priority)
         {
@@ -318,7 +317,7 @@ namespace BehaviourTree
     /**
      * Will repeat until the condition is true or the child returns failure
      */
-    public class RepeatUntil : OneChildNode
+    public class RepeatUntil : Decorator
     {
         readonly Func<bool> _condition;
 
@@ -352,7 +351,7 @@ namespace BehaviourTree
     /**
      * Will repeat a certain amount of times, and stop if the child returns failure
      */
-    public class Repeat : OneChildNode
+    public class Repeat : Decorator
     {
         private readonly int _times;
         private int _currentTimes;
@@ -396,7 +395,7 @@ namespace BehaviourTree
     /**
      * Executes normally, but will return Failure instantly if the condition is met
      */
-    public class FailIf : OneChildNode
+    public class FailIf : Decorator
     {
         private readonly Func<bool> _condition;
 
@@ -465,6 +464,27 @@ namespace BehaviourTree
         }
     }
 
+    public class OrFail : Decorator
+    {
+        public OrFail(string name, int priority = 0) : base(name, priority)
+        {
+        }
+
+        public override Status Process()
+        {
+            if (Children.Count == 0) throw new Exception(Name + " must have a child");
+
+            var status = Children[0].Process();
+            if (status == Status.Success)
+            {
+                Reset();
+                return Status.Success;
+            }
+
+            return Status.Failure;
+        }
+    }
+    
     #endregion
     
     #region Special Leafs
